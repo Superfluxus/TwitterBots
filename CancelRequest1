@@ -1,0 +1,170 @@
+#!/usr/bin/env python
+import sys
+import os
+from twython import Twython
+import random
+import datetime
+import time
+
+#Define API keys
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+ACCESS_KEY = ''
+ACCESS_SECRET = ''
+
+#Create a copy of the Twython object with all our keys and secrets to allow easy commands.
+api = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET)
+
+#Temp client for authurl
+tempclient = Twython(CONSUMER_KEY, CONSUMER_SECRET)
+tcreds = tempclient.get_authentication_tokens()
+authclient = Twython(CONSUMER_KEY, CONSUMER_SECRET, tcreds['oauth_token'], tcreds['oauth_token_secret'])
+
+print("CancelBot connected")
+
+url = tcreds['auth_url']
+failed = 0
+tweets = api.get_mentions_timeline(count=50)
+
+checker = api.get_user_timeline(screen_name='', count=50)
+CodeGiven = False
+##check for #cancelrequest
+counter = 0
+for item in tweets:
+    counter += 1
+    print("We're starting run number " + str(counter))
+    actioned = False
+    text = item['text']
+    text = text.lower()
+    if "#cancelrequest" in text:
+        print("Valid request found, have we already tweeted them?")
+    else:
+        print("Not looking for an action, disregard")
+        continue
+
+    tweetid = item['id']
+
+    for tweet in checker:
+          id = tweet['in_reply_to_status_id']
+          if id == tweetid:
+                   print("I already tweeted this guy!")
+                   print("I have replied to " + str(tweetid) + " with my reply of " + str(id))
+                   actioned = True                   
+                   break
+          else:
+                   print("This tweet wasn't a match, continue looking...")
+                   print('#DEBUG = Their tweet of ID: ' + str(tweetid) + "did not match my reply of " + str(id) )
+                   continue
+    if actioned == True:
+        continue
+    elif actioned == False:
+        print("Somebody has tweeted me with hashtag and I have not tweeted them back")
+        print("#DEBUG - Their tweet ID was " + str(tweetid) )
+        user = text.split('/')
+        user = user[1]
+        username=item['user']['screen_name']
+        actioned = "N/A"
+        requester=item['user']['screen_name']
+        input = user + ":" + requester
+        print("String input is " + str(input))
+        file=open("", 'w')
+        file.write(str(input))
+        file.close()
+        try:
+            api.show_user(screen_name=user)
+            print("User verified")
+        except Exception as e:
+            string = "I am sorry @" + str(username) + "\n" + " I could not find that user that you specified, please double check their @ or tweet @Superfluxus for help!"
+            api.update_status(status=string, in_reply_to_status_id =tweetid)
+            print(e)
+            sys.exit()
+            #tweet back sorry I couldnt find that user or they're on private
+        string = "Here's your link @" + str(username) + "\n" + str(url)
+        api.update_status(status=string, in_reply_to_status_id =tweetid)
+	print(url)
+        CodeGiven = True
+        if not CodeGiven == True:
+            print("Nothing to do")
+            sys.exit()
+        time.sleep(10)
+
+        print("Begin check loop for code")
+        timer = 0
+        while timer <= 90:    
+            with open('') as f:
+                first = f.readline()
+                validate = len(first)
+                if validate < 4:
+                    timer += 1
+                    time.sleep(5)
+		    failed = True
+                elif validate == 7:
+                    timer = 100
+                    failed = False
+                
+                    
+
+        if timer >= 90 and failed == True:
+               print("Timed out")
+               sys.exit
+
+        code = first
+        with open('') as g:
+                second = g.readline()
+        cancel = second
+
+        realcreds = authclient.get_authorized_tokens(code)
+        client = Twython(CONSUMER_KEY, CONSUMER_SECRET, realcreds['oauth_token'], realcreds['oauth_token_secret'])
+        name = client.get_account_settings()
+        name = name['screen_name']
+        list = []
+        users = client.get_friends_ids(screen_name=name)
+        users = users['ids']
+        target = client.show_user(screen_name=cancel)
+        target = target['id']
+        purged = 0
+        worker = 0
+        counter3 = 0
+        for guy in users:
+            counter3 += 1
+        stringy = str(counter3)
+        print("Found " + stringy + " users to sift through")
+
+        for guy in users:
+            worker += 1
+            print("Working on user #" + str(worker))
+            result = client.show_friendship(source_id=guy, target_id=target)
+            result = result['relationship']['source']['following']
+            remaining = client.get_lastfunction_header(header='x-rate-limit-remaining')
+            API = int(remaining)
+            print("We have " + str(API) + "API Calls remaining")
+            if API <= 20:
+                time.sleep(60)
+	    if API <= 5:
+		print("Ran out of API calls, sleeping for 15 minutes")
+		time.sleep(900)
+            if result == True:
+                purged += 1
+                client.destroy_friendship(id=guy)
+                print("Purging relationship with userid " +str(guy))
+            else:
+                continue
+
+        string = "Hey @" + str(name) + "\n" + " Your request has been complete, I have unfollowed " + str(purged) + " accounts for you!"
+        with open('') as h:
+                tweetid = h.readline()
+        api.update_status(status=string, in_reply_to_status_id =tweetid)
+
+        f = open("" 'w')
+        f.close()
+
+        f = open("" 'w')
+        f.close()
+
+        f = open("" 'w')
+        f.close()
+
+        f = open("" 'w')
+        f.close()
+    
+print("All tweets checked, no work to do, script complete")
