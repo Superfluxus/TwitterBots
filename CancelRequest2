@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+import sys
+import os
+from twython import Twython
+import random
+import datetime
+import time
+
+#Define API keys
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+ACCESS_KEY = ''
+ACCESS_SECRET = ''
+
+#Create a copy of the Twython object with all our keys and secrets to allow easy commands.
+api = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET)
+
+print("CancelBot connected")
+
+
+tweets = api.get_mentions_timeline(count=50)
+
+checker = api.get_user_timeline(screen_name='', count=50)
+
+counter=0
+##Check for #code
+
+f = open("", "r")
+list = []
+for x in f:
+    list.append(x)
+
+for item in tweets:
+    counter += 1
+    print("We're starting run number " + str(counter))
+    actioned = False
+    text = item['text']
+    text = text.lower()
+    if "#code" in text:
+        print("Valid request found, have we already tweeted them?")
+    else:
+        print("Not looking for an action, disregard")
+        continue
+
+    tweetid = item['id']
+
+    for tweet in checker:
+          id = tweet['in_reply_to_status_id']
+          if id == tweetid:
+                   print("I already tweeted this guy!")
+                   print("I have replied to " + str(tweetid) + " with my reply of " + str(id))
+                   actioned = True                   
+                   break
+          else:
+                   print("This tweet wasn't a match, continue looking...")
+                   print('#DEBUG = Their tweet of ID: ' + str(tweetid) + "did not match my reply of " + str(id) )
+                   continue
+    if actioned == True:
+        continue
+    elif actioned == False:
+        print("Somebody has tweeted me with hashtag and I have not tweeted them back")
+        print("#DEBUG - Their tweet ID was " + str(tweetid) )
+        username = item['user']['screen_name']
+        actioned = "N/A"
+        user = text.split('#code')
+        code = int(user[1])
+        print("Their code is " + str(code))
+        code = str(code)
+        length = len(code)
+        if length == 5:
+            code = "0" + code
+        elif length == 4:
+            code = "0" + "0" + code
+        print("Who did this user want to cancel?")
+        for x in list:
+            if username in x:
+                print("Found them")
+                cancel = x.split(':')
+                cancel = cancel[0]
+        print("We are cancelling " + str(cancel) + "using the code " + str(code))
+        file=open("", 'w')
+        file.write(str(code))
+        file.close()
+
+        file=open("", 'w')
+        file.write(cancel)
+        file.close()   
+
+        tweetid= str(tweetid)
+        file=open("", 'w')
+        file.write(tweetid)
+        file.close() 
+        #begin unfollow
+
+
+
+
+
+
+
+print("All tweets checked, no work to do, script complete")
+
+
+
