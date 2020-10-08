@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+import sys
+import os
+import datetime
+from twython import Twython
+import math
+import pprint
+
+#Define our constant variables
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+ACCESS_KEY = ''
+ACCESS_SECRET = ''
+
+#Create a copy of the Twython object with all our keys and secrets to allow easy commands.
+api = Twython(CONSUMER_KEY,CONSUMER_SECRET,ACCESS_KEY,ACCESS_SECRET)
+
+#Get time right now
+now = datetime.datetime.now()
+
+#Check if Big Ben has tweeted yet
+tweet=api.show_user(screen_name='big_ben_clock')
+latest = tweet['status']
+time = latest['created_at']
+tweetid = latest['id']
+fulltime = time[11:19]
+year = time[26:30]
+month = time[4:7]
+hour = time[11:13]
+hour = str(hour)
+day = time[4:6]
+minute = time[14:16]
+second = time[17:19]   
+
+my_time_string = (hour)+(minute)+(second)
+my_datetime = datetime.datetime.strptime(my_time_string, "%H%M%S")
+start_hour=my_datetime.replace(minute=0,second=0)
+
+#debug = my_datetime - start_hour
+
+timediff = my_datetime - start_hour
+timediff = timediff.seconds/60
+timediff = math.trunc(timediff)
+if timediff < 1:
+    tweet="@big_ben_clock Big Ben was on time!"
+elif timediff == 1:
+    tweet="@big_ben_clock Big Ben was " + str(timediff) + " minute late to this tweet!"
+else:
+    tweet="@big_ben_clock Big Ben was " + str(timediff) + " minutes late to this tweet!"
+
+print("Tweeting string: " + (tweet) )
+api.update_status(status=tweet, in_reply_to_status_id =tweetid)
+
+
+#debug
+
+#print(timediff)
+#print(my_time_string)
+#print(my_datetime)
+#print(hour, minute, second)
